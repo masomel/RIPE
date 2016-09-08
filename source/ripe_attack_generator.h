@@ -23,6 +23,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <stdarg.h>
 #include <limits.h>
@@ -31,6 +32,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <cpuid.h>
 
 #include "ripe_attack_parameters.h"
 
@@ -50,6 +52,7 @@ struct attack_form {
   enum locations location;
   enum functions function;
 };
+//./build/ripe_attack_generator -t direct -i createfile -c structfuncptrheap  -l heap -f strcpy
 
 typedef struct char_payload CHARPAYLOAD;
 struct char_payload {
@@ -61,11 +64,11 @@ struct char_payload {
 
   jmp_buf *jmp_buffer;
 
-  long stack_jmp_buffer_param;
+  uintptr_t stack_jmp_buffer_param;
   size_t offset_to_copied_base_ptr;
   size_t offset_to_fake_return_addr;
-  long *fake_return_addr;
-  long *ptr_to_correct_return_addr;
+  uintptr_t *fake_return_addr;
+  uintptr_t *ptr_to_correct_return_addr;
 };
 
 typedef struct memory_dump MEM_DUMP;
