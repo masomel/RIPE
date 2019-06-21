@@ -6,7 +6,11 @@
 from distutils.core import setup, Extension
 
 module1 = Extension('ripe_attack_generator_py',
-                    sources = ['../source/ripe_attack_generator_64.c', 'ripe_attack_generator_py.c'])
+                    include_dirs = ['source'],
+                    libraries = ['ripe64'],
+                    library_dirs = ['/home/pyronia/cpython/RIPE/build'],
+                    sources = ['python/ripe_attack_generator_py.c'],
+)
 
 setup (name = 'RIPE for Python',
        version = '0.1',

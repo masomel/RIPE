@@ -17,7 +17,7 @@ Runs a single RIPE attack in Python.
 #
 # Please cite accordingly.
 
-from ripe_attack_generator import generate_attack
+from ripe_attack_generator_py import generate_attack
 import sys
 
 BASE_ATTACK_PARAMS = 5
@@ -27,4 +27,10 @@ if __name__ == '__main__':
         print("Usage: python [-t <technique>]")
         exit(-1)
 
-    generate_attack(" ".join(sys.argv))
+    params = []
+    params.append(sys.argv[0])
+    i = 1
+    while i < len(sys.argv):
+        params.append(sys.argv[i]+sys.argv[i+1])
+        i += 2
+    generate_attack(params)

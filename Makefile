@@ -10,6 +10,8 @@ CLANG_SAFECODE_PATH := ${GOLD_PATH}/bin/
 # disable some protection mechanisms
 CFLAGS := -fno-stack-protector -Wl,-z,execstack -ggdb
 
+RIPE_MODE ?= BIN
+
 all: gcc
 
 # ==================
@@ -83,6 +85,9 @@ clang_64_softbound: clang_64
 clang_safe_64_enabled: CFLAGS += -fmemsafety -g -L /root/bin/binutils_gold/install/lib/ -fmemsafety-terminate -stack-protector=1
 clang_safe_64_enabled: clang_safe_64
 
+ifeq ($(RIPE_MODE),LIB)
+CFLAGS += -DRIPE_LIB
+endif
 
 # ATTACK GENERATOR COMPILE
 ripe_attack_generator: ./source/ripe_attack_generator.c
@@ -91,6 +96,9 @@ ripe_attack_generator: ./source/ripe_attack_generator.c
 ripe_attack_generator_64: ./source/ripe_attack_generator.c
 	$(CC) $(CFLAGS) ./source/ripe_attack_generator_64.c $(UTILS) -o ./build/ripe_attack_generator
 
+ripe_lib:
+	$(CC) $(CFLAGS) -shared -o ./build/libripe64.so -fPIC ./source/ripe_attack_generator_64.c
+
 clean:
-	rm ./build/*
+	rm -rf ./build/*
 

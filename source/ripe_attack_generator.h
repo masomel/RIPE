@@ -93,7 +93,11 @@ struct attackme{
  * (-e output error messages)
  * -o set output stream
  */
+#ifndef RIPE_LIB
 int main(int argc, char **argv);
+#else
+int ripe_main(int argc, const char **argv);
+#endif
 
 void perform_attack(FILE *output_stream,
 		    int (*stack_func_ptr_param)(const char *),

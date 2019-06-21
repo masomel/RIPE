@@ -67,7 +67,6 @@ total_fail = 0
 total_some = 0
 total_np = 0
 
-os.system("rm /tmp/ripe_log")
 for attack in attacks:
     for tech in techniques:
         for loc in locations:
@@ -78,7 +77,9 @@ for attack in attacks:
                     attack_possible = 1
                     while i < repeat_times:
                         i += 1
-                        cmdline = "./build/ripe_attack_generator -t " + tech + " -i " + attack + " -c " + ptr + " -l " + loc + " -f " + func + " >> /tmp/ripe_log 2>&1"
+
+                        os.system("rm /tmp/ripe_log")
+                        cmdline = "/home/pyronia/cpython/pyronia_build/python python/run_ripe_attack.py -t " + tech + " -i " + attack + " -c " + ptr + " -l " + loc + " -f " + func + " > /tmp/ripe_log 2>&1"
                         os.system(cmdline)
                         log = open("/tmp/ripe_log", "r")
 

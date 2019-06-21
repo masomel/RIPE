@@ -27,13 +27,32 @@
 #include "ripe_attack_generator.h"
 
 static PyObject * generate_attack_py(PyObject *self, PyObject *args) {
-    const char *params;
-    int num_params;
-    int ret;
-
-    if (!PyArg_ParseTuple(args, "s#", &params, &num_params))
+    PyObject *arg_list = NULL;
+    int num_args = 0;
+    char **params = NULL;
+    int i = 0;
+    int ret = -1;
+    
+    if (!PyArg_ParseTuple(args, "O", &arg_list))
         return NULL;
-    ret = main(num_params/2, &params);
+    num_args = PyObject_Length(arg_list);
+    if (num_args < 0 || num_args != 6)
+        return NULL;
+    params = (char **) malloc(num_args*sizeof(char *));
+    if (params == NULL)
+        return NULL;
+
+    for (i = 0; i < num_args; i++) {
+        PyObject *item;
+        item = PyList_GetItem(arg_list, i);
+        if (!PyString_Check(item))
+            params[i] = NULL;
+        params[i] = PyString_AsString(item);
+	//printf("Got param: \"%s\"\n", params[i]);
+    }
+    
+    ret = ripe_main(num_args, params);
+    free(params);
     return Py_BuildValue("i", ret);
 }
 
@@ -45,8 +64,8 @@ PyMethodDef ripe_methods[] = {
 };
 
 PyMODINIT_FUNC
-initripe_attack_generator(void) {
-    PyObject *mod = Py_InitModule("ripe_attack_generator", ripe_methods);
+initripe_attack_generator_py(void) {
+    PyObject *mod = Py_InitModule("ripe_attack_generator_py", ripe_methods);
 
     if (mod == NULL)
         return;

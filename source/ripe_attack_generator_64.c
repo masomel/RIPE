@@ -125,7 +125,12 @@ int fooz(char *a, int b){
 /**********/
 /* MAIN() */
 /**********/
-int main(int argc, char **argv) {
+#ifndef RIPE_LIB
+int main(int argc, char **argv)
+#else
+int ripe_main(int argc, const char **argv)
+#endif
+{
   int option_char;
   int i = 0;
   FILE *output_stream;
@@ -173,8 +178,8 @@ rop_sled[6] = &exit;
 	exit(1);
   }
 
-
   while((option_char = getopt(argc, argv, "t:i:c:l:f:d:e:o")) != -1) {
+    fprintf(stdout, "Next option: %s %s\n", &option_char, optarg);
     switch(option_char) {
     case 't':
       set_technique(optarg);
@@ -497,7 +502,7 @@ void perform_attack(FILE *output_stream,
     break;
   default:
     if(output_error_msg) {
-      fprintf(stderr, "Error: Unknown choice of location\n");
+      fprintf(stderr, "Error: Unknown choice of location: %d\n", attack.location);
     }
     exit(1);
     break;
